@@ -14,7 +14,7 @@ app = FastAPI()
 @app.post("/run")
 def run(data: InputData):
     output = airBox.run(data)
-    return output
+    return [output]
 
 @app.get("/fig_one")
 def fig_one():
