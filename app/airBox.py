@@ -149,7 +149,7 @@ def plot_avg( pol_df ):
         cond = timestamp.dt.time == time(i, 0, 0)
         # Fixed By M123040019: 'append' was removed from pandas 2.0
         #avg_pol_df = avg_pol_df.append(pol_df[cond].mean(), ignore_index=True)
-        avg_pol_df = pd.concat([avg_pol_df, pol_df[cond].mean()], ignore_index=True)
+        avg_pol_df = pd.concat([avg_pol_df, pd.DataFrame(pol_df[cond].mean())], ignore_index=True)
 
 
 
@@ -190,4 +190,4 @@ def run(data):
     feats = ['app','area','SiteName','name','device_id','gps_lat','gps_lon']
     detail = all_df.iloc[0][feats]
     string = f"地址: {data.address}~緯度: {my_latlon[0]}~經度: {my_latlon[1]}~~APP: {detail['app']}~區域: {detail['area']}~名稱: {detail['SiteName']} / {detail['name']}~裝置 ID: {detail['device_id']}~緯度: {detail['gps_lat']}~經度: {detail['gps_lon']}"
-    print( string )
+    return string
