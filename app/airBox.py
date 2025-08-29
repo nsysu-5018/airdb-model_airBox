@@ -24,7 +24,17 @@ def geocoding(place):
     text = soup.prettify()
 
     json_data = json.loads(text)
-    #print(json_data)
+
+    # Convert single quotes to double quotes
+    result_raw = str(json_data)
+    result_fix = result_raw.replace("'", '"')
+    json_data = json.loads(result_fix)
+
+    # # output geocode response to file for debugging
+    # geocode_filename = f"geocode_{place.replace(' ', '_')}.json"
+    # with open(geocode_filename, "w") as f:
+    #     f.write(result_fix)
+
     latlon = json_data['results'][0]['geometry']['location']
     latlon = list(latlon.values())
     return latlon
