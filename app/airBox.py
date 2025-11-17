@@ -4,14 +4,17 @@ import ssl
 import json 
 import pandas as pd
 import matplotlib.pyplot  as plt
+import matplotlib.dates as mdates
 import matplotlib.gridspec as gridspec
-from datetime import time
+from datetime import datetime, time
 from urllib import request
 import requests
 from bs4 import BeautifulSoup
 import os
 from math import radians, sin, cos, atan2, sqrt
 from enum import Enum
+from plot import plot_total
+from constants import record_time_key
 from warnings import simplefilter
 simplefilter(action='ignore')
 
@@ -104,6 +107,7 @@ def get_nearest_station_from_latlon(latlon, air_quality_stations):
         distance_to_station = haversine_distance(latlon[0], latlon[1], station_latitude, station_longitude)
         if distance_to_station < min_distance:
             closest_station = station
+            min_distance = distance_to_station
     return closest_station
 
 
@@ -124,7 +128,7 @@ def get_pollution_from_station(days, station):
                     'sitename': record['sitename'],
                     'siteid': record['siteid'],
                     'pm2.5': record['pm2.5_conc'],
-                    'record_time': record['datacreationdate']
+                    record_time_key: record['datacreationdate']
                 }
                 station_records.append(filtered_record)
                 if len(station_records) == target_amount:
@@ -166,7 +170,7 @@ def get_additional_data_from_station(days, station, data_name):
                     'sitename': record['sitename'],
                     'siteid': record['siteid'],
                     data_name.value: record['concentration'],
-                    'record_time': record['monitordate']
+                    record_time_key: record['monitordate']
                 }
                 additional_data_records.append(filtered_record)
                 if len(additional_data_records) == target_amount:
@@ -186,57 +190,6 @@ def get_temperature_from_station(days, station):
 
 def get_humidity_from_station(days, station):
         return get_additional_data_from_station(days, station, AdditionalData.humidity)
-
-def plot_total( pol_df ):
-    quality = ['great','normal','notWell','bad','danger']
-    pm25_standard = [0, 15, 35, 55, 250]
-    fig = plt.figure(figsize=(18, 6))
-    gs = gridspec.GridSpec(18, 2, figure=fig)
-
-    # Get date of 7 days, and use it to set x label of plot.
-    dates = pol_df.index.to_series()
-    dates = dates[dates.dt.time == time(0, 0, 0)]
-
-    # PM2.5 
-    ax = fig.add_subplot(gs[:8, :])
-    ax.plot(pol_df['s_d0'], color="royalblue")
-    ax.plot(pol_df.loc[dates.index, "s_d0"], "o")
-    ax.set_title("PM2.5", loc="left", fontsize=14, pad=10)
-
-    colors = ['lime','gold','orangered','red','darkviolet']
-    for st, color in zip(pm25_standard, colors):
-        if st == 0:
-            ax.fill_between(pol_df.index, st, pol_df['s_d0'], color=color)
-        else:
-            ax.fill_between(pol_df.index, st, pol_df['s_d0'], where=pol_df['s_d0']>st, color=color, interpolate=True)
-            if pol_df['s_d0'].max() > st:
-                ax.axhline(y=st, color='black', linestyle='--')
-
-    # Temperature
-    ax1 = fig.add_subplot(gs[11:, 0])
-    ax1.tick_params(rotation=20, axis='x')
-    ax1.plot(pol_df['s_t0'], color="royalblue")
-    ax1.plot(pol_df.loc[dates.index, "s_t0"], "o")
-    ax1.set_title('Temperature', loc="left", fontsize=14, pad=10)
-
-    tmp = ax1.get_yticks()
-    ax1.fill_between(pol_df.index, pol_df['s_t0'], color='orange', alpha=0.6)
-    ax1.set_ylim(min(tmp), max(tmp))
-
-    # Humidity
-    ax2 = fig.add_subplot(gs[11:, 1])
-    ax2.tick_params(rotation=20, axis='x')
-    ax2.plot(pol_df['s_h0'], color="royalblue")
-    ax2.plot(pol_df.loc[dates.index, "s_h0"], "o")
-    ax2.set_title('Humidity', loc="left", fontsize=14, pad=10)
-
-    tmp = ax2.get_yticks()
-    ax2.fill_between(pol_df.index, pol_df['s_h0'], color='lightseagreen', alpha=0.6)
-    ax2.set_ylim(min(tmp), max(tmp))
-
-    plt.savefig( 'fig_one.jpg', bbox_inches='tight' )
-    plt.close()
-
 
 def plot_avg( pol_df ):
     # 七天中各小時平均值
@@ -288,7 +241,7 @@ def run(data):
     pollution = get_pollution_from_station(past_days, nearest_station)
     temperature_records = get_temperature_from_station(past_days, nearest_station)
     humidity_records = get_humidity_from_station(past_days, nearest_station)
-    # plot_total( pol_df )
+    plot_total(pollution, temperature_records, humidity_records)
     # plot_avg( pol_df )
     # feats = ['app','area','SiteName','name','device_id','gps_lat','gps_lon']
     # detail = all_df.iloc[0][feats]
