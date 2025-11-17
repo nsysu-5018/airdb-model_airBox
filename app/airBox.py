@@ -16,6 +16,8 @@ simplefilter(action='ignore')
 
 # how to exe: airBox.py <address>  <Number(random)>
 
+MINISTRY_OF_ENVIRONMENT_API_KEY = os.environ.get('MOE_API_KEY')
+
 # Google API 取得經緯度
 def geocoding(place):
     api_key = os.environ.get("GOOGLE_API_KEY")
@@ -42,8 +44,7 @@ def geocoding(place):
     return latlon
 
 def get_air_quality_stations():
-    ministry_of_environment_api_key = os.environ.get('MOE_API_KEY')
-    air_quality_stations_api_url = f'https://data.moenv.gov.tw/api/v2/aqx_p_07?api_key={ministry_of_environment_api_key}'
+    air_quality_stations_api_url = f'https://data.moenv.gov.tw/api/v2/aqx_p_07?api_key={MINISTRY_OF_ENVIRONMENT_API_KEY}'
     response = requests.get(air_quality_stations_api_url)
     json_data = response.json()
 
@@ -92,7 +93,7 @@ def get_nearest_station_from_latlon(latlon, air_quality_stations):
     dict
         The station dictionary representing the closest station to the given coordinates.
     """
-    
+
     min_distance = float('inf')
     closest_station = None
     for station in air_quality_stations:
@@ -104,35 +105,37 @@ def get_nearest_station_from_latlon(latlon, air_quality_stations):
     return closest_station
 
 
-def get_7days_pollution_from_deviceID(device_id):
-    # PM2.5 Lass-net open API
-    ssl._create_default_https_context = ssl._create_unverified_context
-
-    url = 'https://pm25.lass-net.org/API-1.0.0/device/'+device_id+'/history/'
-    json_data = request.urlopen(url).read().decode("utf-8")
-    json_data = json.loads(json_data)
-
-    # Parse json
-    terms = json_data["feeds"][0]['AirBox']
-    data = [items[1] for term in terms for items in term.items()]
-
-    # Transfer datatype of time to timestamp, and adjust time zone
-    df = pd.DataFrame.from_dict(data)
-    df['timestamp'] = pd.to_datetime(df['timestamp'], format="%Y-%m-%dT%H:%M:%SZ")
-    df['timestamp'] = df['timestamp']+pd.Timedelta("08:00:00")
-    df['timestamp']
+def get_pollution_from_station(days, station):
+    station_records = []
+    offset = 0
+    records_per_day = 24
+    target_amount = records_per_day * days
+    while len(station_records) < target_amount:
+        particulate_matter_api_url = f'https://data.moenv.gov.tw/api/v2/aqx_p_488?api_key={MINISTRY_OF_ENVIRONMENT_API_KEY}&offset={offset}'
+        response = requests.get(particulate_matter_api_url)
+        json_data = response.json()
+        records = json_data['records']
+        for record in records:
+            if record['siteid'] == station['siteid']:
+                filtered_record = {
+                    'county': record['county'],
+                    'sitename': record['sitename'],
+                    'siteid': record['siteid'],
+                    'pm2.5': record['pm2.5_conc'],
+                    'record_time': record['datacreationdate']
+                }
+                station_records.append(filtered_record)
+                if len(station_records) == target_amount:
+                    break
+        offset += 1000
     
-    all_df = df
-    # Get specified columns
-    # s_d0=PM2.5, s_d1=PM10, s_d2=PM1, s_h0=humidity, s_t0=temperature
-    feats = ['timestamp', 's_d0', 's_d1', 's_d2', 's_h0', 's_t0',]
-    df = df[feats]
+    # # Uncomment this section to view the pollution api response 
+    # pm25_filename = f"pm25_station_{station['siteid']}.txt"
+    # with open(pm25_filename, "w") as f:
+    #     for record in station_records:
+    #         f.write(f"{record}\n") 
     
-    # Average pollution data in hours
-    df.index = df['timestamp']
-    df = df.resample("H").mean() 
-    
-    return df, all_df
+    return station_records
 
 def plot_total( pol_df ):
     quality = ['great','normal','notWell','bad','danger']
@@ -231,7 +234,7 @@ def run(data):
     my_latlon = geocoding( data.address )
     air_quality_stations = get_air_quality_stations()
     nearest_station = get_nearest_station_from_latlon(my_latlon, air_quality_stations)
-    # pol_df, all_df = get_7days_pollution_from_deviceID( device_ID )
+    pollution = get_pollution_from_station(7, nearest_station)
     # plot_total( pol_df )
     # plot_avg( pol_df )
     # feats = ['app','area','SiteName','name','device_id','gps_lat','gps_lon']
