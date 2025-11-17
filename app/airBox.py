@@ -10,6 +10,7 @@ from urllib import request
 import requests
 from bs4 import BeautifulSoup
 import os
+from math import radians, sin, cos, atan2, sqrt
 from warnings import simplefilter
 simplefilter(action='ignore')
 
@@ -53,14 +54,55 @@ def get_air_quality_stations():
     air_quality_stations = json_data['records']
     return air_quality_stations
 
-# Calculate distances between all devices and specified latlon, and get the nearest airbox device's id.
-def get_nearest_deviceID_from_latlon(latlon, devices_df):
-    distance = (((devices_df['gps_lat'] - latlon[0]).abs()**2) +
-                ((devices_df['gps_lon'] - latlon[1]).abs()**2) )**0.5
+def haversine_distance(lat1, lon1, lat2, lon2):
+    # Earth radius in kilometers (use 6371 for km, 3958.8 for miles)
+    R = 6371  
+
+    # Convert degrees to radians
+    lat1 = radians(lat1)
+    lon1 = radians(lon1)
+    lat2 = radians(lat2)
+    lon2 = radians(lon2)
+
+    # Differences
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
     
-    nearest_idx = distance.sort_values().iloc[:3].index
-    device_id = devices_df.loc[nearest_idx[0], "device_id"]
-    return device_id
+    return R * c
+
+def get_nearest_station_from_latlon(latlon, air_quality_stations):
+    """
+    Find the nearest air quality monitoring station to a given latitude/longitude.
+    
+    Parameters
+    ----------
+    latlon : list[float]
+        A list containing `[latitude, longitude]` representing the target location.
+        Must have exactly two elements.
+    air_quality_stations : list[dict]
+        A list of station objects. Each station dict must contain:
+        - 'twd97lon' : str or float — station longitude
+        - 'twd97lat' : str or float — station latitude
+
+    Returns
+    -------
+    dict
+        The station dictionary representing the closest station to the given coordinates.
+    """
+    
+    min_distance = float('inf')
+    closest_station = None
+    for station in air_quality_stations:
+        station_latitude = float(station['twd97lat'])
+        station_longitude = float(station['twd97lon'])
+        distance_to_station = haversine_distance(latlon[0], latlon[1], station_latitude, station_longitude)
+        if distance_to_station < min_distance:
+            closest_station = station
+    return closest_station
+
 
 def get_7days_pollution_from_deviceID(device_id):
     # PM2.5 Lass-net open API
@@ -188,7 +230,7 @@ def plot_avg( pol_df ):
 def run(data):
     my_latlon = geocoding( data.address )
     air_quality_stations = get_air_quality_stations()
-    # device_ID = get_nearest_deviceID_from_latlon(my_latlon, devices_df)
+    nearest_station = get_nearest_station_from_latlon(my_latlon, air_quality_stations)
     # pol_df, all_df = get_7days_pollution_from_deviceID( device_ID )
     # plot_total( pol_df )
     # plot_avg( pol_df )
