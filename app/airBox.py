@@ -231,9 +231,9 @@ def plot_avg( pol_df ):
 
 
 def run(data):
-    my_latlon = geocoding( data.address )
+    address_latlon = geocoding(data.address)
     air_quality_stations = get_air_quality_stations()
-    nearest_station = get_nearest_station_from_latlon(my_latlon, air_quality_stations)
+    nearest_station = get_nearest_station_from_latlon(address_latlon, air_quality_stations)
     pollution = get_pollution_from_station(7, nearest_station)
     # plot_total( pol_df )
     # plot_avg( pol_df )
