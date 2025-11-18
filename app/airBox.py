@@ -201,7 +201,4 @@ def run(data):
     humidity_records = get_humidity_from_station(past_days, nearest_station)
     plot_total(pollution, temperature_records, humidity_records)
     plot_pm25_avgerage(pollution)
-    # feats = ['app','area','SiteName','name','device_id','gps_lat','gps_lon']
-    # detail = all_df.iloc[0][feats]
-    # string = f"地址: {data.address}~緯度: {my_latlon[0]}~經度: {my_latlon[1]}~~APP: {detail['app']}~區域: {detail['area']}~名稱: {detail['SiteName']} / {detail['name']}~裝置 ID: {detail['device_id']}~緯度: {detail['gps_lat']}~經度: {detail['gps_lon']}"
-    # return string
+    return f"地址: {data.address}~緯度: {address_latlon[0]}~經度: {address_latlon[1]}~~APP: TODO~區域: {nearest_station['areaname']}~名稱: {nearest_station['sitename']} / TODO~裝置 ID: {nearest_station['siteid']}~緯度: {nearest_station['twd97lat']}~經度: {nearest_station['twd97lon']}"
