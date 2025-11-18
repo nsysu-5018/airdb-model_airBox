@@ -1,6 +1,8 @@
 import matplotlib.pyplot  as plt
 import matplotlib.dates as mdates
 from datetime import datetime
+from collections import defaultdict
+import numpy as np
 from constants import record_time_key
 
 def plot_simple_metric(ax, data, value_key, title, fill_color):
@@ -116,4 +118,73 @@ def plot_total(pollution_data, temperature_data, humidity_data):
 
     plt.tight_layout()
     plt.savefig('fig_one.jpg', bbox_inches='tight', dpi=300)
+    plt.close()
+
+def plot_pm25_avgerage(pollution_data):
+    # Group PM2.5 values by hour
+    hourly_data = defaultdict(list)
+
+    for record in pollution_data:
+        try:
+            # Parse the record_time to extract the hour
+            dt = datetime.strptime(record['record_time'], '%Y-%m-%d %H:%M')
+            hour = dt.hour
+            pm25_value = float(record['pm2.5'])
+            hourly_data[hour].append(pm25_value)
+        except (ValueError, TypeError):
+            continue
+
+    # Calculate average for each hour
+    hours = list(range(24))
+    averages = []
+
+    for hour in hours:
+        if hour in hourly_data and hourly_data[hour]:
+            avg = np.mean(hourly_data[hour])
+            averages.append(avg)
+        else:
+            averages.append(np.nan)
+
+    # Create the plot
+    fig = plt.figure(figsize=(9, 3))
+    ax = fig.add_subplot(1, 1, 1)
+
+    # Reorder hours to start from 14 (2 PM) like in the image
+    hour_labels = list(range(14, 24)) + list(range(0, 14))
+    reordered_averages = averages[14:] + averages[:14]
+
+    # Plot the line with markers
+    ax.plot(range(24), reordered_averages, 'o-', color='blue', linewidth=2, markersize=6)
+
+    # Fill areas smoothly following the line
+    threshold = 15
+    x_values = np.array(range(24))
+    y_values = np.array(reordered_averages)
+
+    # Fill green area (from 0 to min of threshold or actual value)
+    ax.fill_between(x_values, 0, np.minimum(y_values, threshold), 
+                    color='lime', alpha=1.0)
+
+    # Fill yellow area (from threshold to actual value, where value > threshold)
+    ax.fill_between(x_values, threshold, y_values, 
+                    where=(y_values > threshold), 
+                    color='gold', alpha=1.0, interpolate=True)
+
+    # Add threshold line
+    ax.axhline(y=threshold, color='black', linestyle='--', linewidth=1.5)
+
+    # Customize the plot
+    ax.set_xlim(-0.5, 23.5)
+    ax.set_ylim(0, max(reordered_averages) * 1.1)
+    ax.set_xticks(range(24))
+    ax.set_xticklabels(hour_labels)
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    ax.set_title('PM2.5 (7 days average for each hour in day.)', fontsize=12)
+    ax.grid(False)
+    ax.spines['top'].set_visible(True)
+    ax.spines['right'].set_visible(True)
+
+    plt.tight_layout()
+    plt.savefig('fig_two.jpg', dpi=300)
     plt.close()

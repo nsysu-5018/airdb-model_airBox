@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 import os
 from math import radians, sin, cos, atan2, sqrt
 from enum import Enum
-from plot import plot_total
+from plot import plot_total, plot_pm25_avgerage
 from constants import record_time_key
 from warnings import simplefilter
 simplefilter(action='ignore')
@@ -191,48 +191,6 @@ def get_temperature_from_station(days, station):
 def get_humidity_from_station(days, station):
         return get_additional_data_from_station(days, station, AdditionalData.humidity)
 
-def plot_avg( pol_df ):
-    # 七天中各小時平均值
-    cur_hour = pol_df.index[-1].hour
-    pm25_standard = [0, 15, 35, 55, 250]
-    # Get mean pollution data of 7 days.
-    avg_pol_df = pd.DataFrame(columns=pol_df.columns)
-    timestamp = pol_df.index.to_series()
-    for i in range(24):
-        cond = timestamp.dt.time == time(i, 0, 0)
-        # Fixed By M123040019: 'append' was removed from pandas 2.0
-        #avg_pol_df = avg_pol_df.append(pol_df[cond].mean(), ignore_index=True)
-        avg_pol_df = pd.concat([avg_pol_df, pd.DataFrame([pol_df[cond].mean()])], ignore_index=True)
-
-
-
-    # Rotate 資料，以目前時間為最後一筆
-    dft = avg_pol_df
-    data = pd.concat([dft.iloc[cur_hour+1:], dft.iloc[:cur_hour+1]])
-    data = data.reset_index(drop=True)
-
-    xt = [i for i in range(24)]
-    xts = xt[cur_hour+1:]+xt[:cur_hour+1]
-
-    # Set plot
-    plt.figure(figsize=(9, 3))
-    plt.plot(data['s_d0'], 'o-', color="royalblue")
-    plt.xticks(xt, xts)
-    plt.title("PM2.5 (7 days average for each hour in day.)", loc="left", fontsize=14, pad=10)
-                
-    # Set color
-    colors = ['lime','gold','orangered','red','darkviolet']
-    for st, color in zip(pm25_standard, colors):
-        if st == 0:
-            plt.fill_between(list( data.index), st, list(data['s_d0']), color=color)
-        else:
-            plt.fill_between(list(data.index), st, list(data['s_d0']), where=data['s_d0']>st, color=color, interpolate=True)
-            if data['s_d0'].max() > st:
-                plt.axhline(y=st, color='black', linestyle='--')            
-
-    plt.savefig( 'fig_two.jpg')
-
-
 def run(data):
     address_latlon = geocoding(data.address)
     air_quality_stations = get_air_quality_stations()
@@ -242,7 +200,7 @@ def run(data):
     temperature_records = get_temperature_from_station(past_days, nearest_station)
     humidity_records = get_humidity_from_station(past_days, nearest_station)
     plot_total(pollution, temperature_records, humidity_records)
-    # plot_avg( pol_df )
+    plot_pm25_avgerage(pollution)
     # feats = ['app','area','SiteName','name','device_id','gps_lat','gps_lon']
     # detail = all_df.iloc[0][feats]
     # string = f"地址: {data.address}~緯度: {my_latlon[0]}~經度: {my_latlon[1]}~~APP: {detail['app']}~區域: {detail['area']}~名稱: {detail['SiteName']} / {detail['name']}~裝置 ID: {detail['device_id']}~緯度: {detail['gps_lat']}~經度: {detail['gps_lon']}"
