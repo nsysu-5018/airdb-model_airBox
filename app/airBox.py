@@ -24,28 +24,18 @@ MINISTRY_OF_ENVIRONMENT_API_KEY = os.environ.get('MOE_API_KEY')
 MOE_API_BASE_URL = 'https://data.moenv.gov.tw/api/v2'
 
 # Google API 取得經緯度
-def geocoding(place):
-    api_key = os.environ.get("GOOGLE_API_KEY")
-    url = "https://maps.googleapis.com/maps/api/geocode/json?address={}&key={}".format(place, api_key)
+def geocoding(address):
+    google_api_key = os.environ.get("GOOGLE_API_KEY")
+    geocoding_url = f'https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={google_api_key}'
+    response = requests.get(geocoding_url)
 
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "html.parser")
-    text = soup.prettify()
-
-    json_data = json.loads(text)
-
-    # Convert single quotes to double quotes
-    result_raw = str(json_data)
-    result_fix = result_raw.replace("'", '"')
-    json_data = json.loads(result_fix)
-
-    # # output geocode response to file for debugging
-    # geocode_filename = f"geocode_{place.replace(' ', '_')}.json"
-    # with open(geocode_filename, "w") as f:
-    #     f.write(result_fix)
-
-    latlon = json_data['results'][0]['geometry']['location']
-    latlon = list(latlon.values())
+    # # Uncomment this section to understand the geocode response
+    # with open('geocode.json', 'w') as f:
+    #     f.write(response.text)
+    
+    json_data = response.json()
+    location = json_data['results'][0]['geometry']['location']
+    latlon = [location['lat'], location['lng']]
     return latlon
 
 def get_air_quality_stations():
