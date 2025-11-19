@@ -26,7 +26,7 @@ def plot_simple_metric(ax, data, value_key, title, fill_color):
             times.append(time)
             values.append(value)
         except (TypeError, ValueError) as e:
-            print(f"Error processing record: {record}")
+            continue
 
     # Sort by time
     sorted_data = sorted(zip(times, values), key=lambda x: x[0])
@@ -67,7 +67,7 @@ def plot_total(pollution_data, temperature_data, humidity_data):
             times.append(time)
             pm25_values.append(pm25)
         except (TypeError, ValueError) as e:
-            print(record)
+            continue
 
     # Sort by time
     sorted_data = sorted(zip(times, pm25_values))
