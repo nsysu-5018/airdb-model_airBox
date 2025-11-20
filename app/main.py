@@ -17,7 +17,7 @@ def run(data: InputData):
     return [output]
 
 @app.get("/fig_one")
-def fig_one():
+def get_total_plot():
     return FileResponse(total_plot_path)
 
 @app.get("/fig_two")
