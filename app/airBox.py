@@ -4,6 +4,7 @@ from math import radians, sin, cos, atan2, sqrt
 from enum import Enum
 from fastapi import HTTPException
 import json
+import logging
 from plot import plot_total, plot_pm25_avgerage
 from constants import record_time_key, BASE_DIR
 
@@ -12,8 +13,11 @@ from constants import record_time_key, BASE_DIR
 MINISTRY_OF_ENVIRONMENT_API_KEY = os.environ.get('MOE_API_KEY')
 MOE_API_BASE_URL = 'https://data.moenv.gov.tw/api/v2'
 
+logger = logging.getLogger("uvicorn")
+
 # Google API 取得經緯度
 def geocoding(address):
+    logger.info("airbox - getting latitude and longtitude for address")
     google_api_key = os.environ.get("GOOGLE_API_KEY")
     geocoding_url = f'https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={google_api_key}'
     response = requests.get(geocoding_url)
@@ -31,6 +35,7 @@ def geocoding(address):
     return latlon
 
 def get_air_quality_stations():
+    logger.info("airbox - getting air quality stations")
     air_quality_stations_api_url = f'{MOE_API_BASE_URL}/aqx_p_07?api_key={MINISTRY_OF_ENVIRONMENT_API_KEY}'
     response = requests.get(air_quality_stations_api_url)
     json_data = response.json()
@@ -95,6 +100,7 @@ def get_nearest_station_from_latlon(latlon, air_quality_stations):
 
 
 def get_pollution_from_station(days, station):
+    logger.info("airbox - getting pollution data")
     station_records = []
     offset = 0
     records_per_day = 24
@@ -131,6 +137,7 @@ class AdditionalData(Enum):
     humidity = 'humidity'
 
 def get_additional_data_from_station(days, station, data_name):
+    logger.info(f'airbox - getting {data_name.value}')
     field_english_name = ''
     if data_name == AdditionalData.temperature:
         field_english_name = 'AMB_TEMP'
