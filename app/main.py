@@ -21,5 +21,5 @@ def get_total_plot():
     return FileResponse(total_plot_path)
 
 @app.get("/fig_two")
-def fig_two():
+def get_pm25_average():
     return FileResponse(pm25_average_plot_path)
