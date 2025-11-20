@@ -2,6 +2,7 @@ import requests
 import os
 from math import radians, sin, cos, atan2, sqrt
 from enum import Enum
+from fastapi import HTTPException
 from plot import plot_total, plot_pm25_avgerage
 from constants import record_time_key, BASE_DIR
 
@@ -21,7 +22,10 @@ def geocoding(address):
     #     f.write(response.text)
     
     json_data = response.json()
-    location = json_data['results'][0]['geometry']['location']
+    results = json_data['results']
+    if len(results) == 0:
+        raise HTTPException(status_code=400, detail='Invalid address')
+    location = results[0]['geometry']['location']
     latlon = [location['lat'], location['lng']]
     return latlon
 
