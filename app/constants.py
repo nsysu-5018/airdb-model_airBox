@@ -10,7 +10,7 @@ record_time_key = 'record_time'
 pm25_api_endpoint_mapping = {
     "1": "aqx_p_189", # 基隆
     "2": "aqx_p_190", # 汐止
-    "3": "aqx_p_191", # 萬里
+    "3": "aqx_p_191", # 萬里 not found from all stations
     "4": "aqx_p_192", # 新店
     "5": "aqx_p_193", # 土城
     "6": "aqx_p_194", # 板橋
@@ -84,5 +84,7 @@ pm25_api_endpoint_mapping = {
     "78": "aqx_p_262", # 馬公
     "80": "aqx_p_263", # 關山
     "83": "aqx_p_264", # 麥寮
-    "84": "aqx_p_461", # 富貴角    
+    "84": "aqx_p_461", # 富貴角
+    # "85": "missing", # 大城
+    # "139": "missing", # 員林
   }
