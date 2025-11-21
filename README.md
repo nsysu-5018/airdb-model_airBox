@@ -1,5 +1,15 @@
 # airdb-model_airBox
 
+## Result Previews
+
+### total
+
+<img src=".github/readme_images/total.jpg" alt="total plot">
+
+### pm25_average
+
+<img src=".github/readme_images/pm25_average.jpg" alt="pm2.5 average plot">
+
 ## Development
 
 ### Build and Run
